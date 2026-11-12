@@ -1,0 +1,110 @@
+--- a/resolver-plugin/src/main/groovy/org/ysb33r/gradle/jruby/api/gems/GemConfigurations.groovy
++++ b/resolver-plugin/src/main/groovy/org/ysb33r/gradle/jruby/api/gems/GemConfigurations.groovy
+@@ -16,6 +16,7 @@
+ import org.gradle.api.artifacts.ConfigurationContainer
+ import org.gradle.api.tasks.TaskContainer
+ import org.gradle.api.tasks.TaskProvider
++import org.ysb33r.gradle.jruby.api.tasks.AbstractGemPrepareTask
+ import org.ysb33r.gradle.jruby.api.tasks.AbstractJRubyExecTask
+ import org.ysb33r.gradle.jruby.internal.gems.GemPrepareUtils
+ import org.ysb33r.grolifant5.api.core.ConfigCacheSafeOperations
+@@ -59,7 +60,7 @@
+      * @param prepareClass Task type to create.
+      * @return Provider to a configuration
+      */
+-    public <T extends GemPrepareTask> RegisteredGemConfiguration<T> register(
++    public <T extends AbstractGemPrepareTask> RegisteredGemConfiguration<T> register(
+         final CharSequence c,
+         Class<T> prepareClass
+     ) {
+@@ -86,7 +87,7 @@
+      *
+      * @since 2.0
+      */
+-    public <T extends GemPrepareTask, E extends AbstractJRubyExecTask> RegisteredGemConfiguration<T> register(
++    public <T extends AbstractGemPrepareTask, E extends AbstractJRubyExecTask> RegisteredGemConfiguration<T> register(
+         final CharSequence c,
+         Class<T> prepareClass,
+         Class<E> execClass
+@@ -115,7 +116,7 @@
+      *
+      * @since 2.0
+      */
+-    public <T extends GemPrepareTask, E extends AbstractJRubyExecTask> RegisteredGemConfiguration<T> register(
++    public <T extends AbstractGemPrepareTask, E extends AbstractJRubyExecTask> RegisteredGemConfiguration<T> register(
+         final CharSequence c,
+         Class<T> prepareClass,
+         Class<E> execClass,
+@@ -136,14 +137,14 @@
+      * @param resolvable Configuration instance which can be resolved.
+      * @param prepareClass Task type to create.
+      */
+-    public <T extends GemPrepareTask> RegisteredGemConfiguration<T> register(
++    public <T extends AbstractGemPrepareTask> RegisteredGemConfiguration<T> register(
+         final Configuration resolvable,
+         Class<T> prepareClass
+     ) {
+         registeredAs(resolvable, registerPrepareTask(prepareClass, resolvable.name, resolvable))
+     }
+ 
+-    private <T extends GemPrepareTask> TaskProvider<T> registerPrepareTask(
++    private <T extends AbstractGemPrepareTask> TaskProvider<T> registerPrepareTask(
+         Class<T> taskType,
+         String baseName,
+         Configuration resolver
+@@ -177,7 +178,7 @@
+         })
+     }
+ 
+-    private <T extends GemPrepareTask> RegisteredGemConfiguration<T> registeredAs(
++    private <T extends AbstractGemPrepareTask> RegisteredGemConfiguration<T> registeredAs(
+         Configuration cfg,
+         TaskProvider<T> task
+     ) {
+--- a/resolver-plugin/src/main/groovy/org/ysb33r/gradle/jruby/api/core/JRubyExecSpec.groovy
++++ b/resolver-plugin/src/main/groovy/org/ysb33r/gradle/jruby/api/core/JRubyExecSpec.groovy
+@@ -23,8 +23,6 @@
+ 
+ import javax.inject.Inject
+ 
+-import static java.util.Collections.EMPTY_LIST
+-import static java.util.Collections.EMPTY_MAP
+ import static org.ysb33r.grolifant5.api.core.StringTools.EMPTY
+ 
+ /**
+@@ -58,10 +56,10 @@
+      */
+     JRubyExecSpec(ConfigCacheSafeOperations ccso) {
+         super(ccso, new JRubyScriptDefinition(ccso))
+-        this.systemPathProvider = ccso.providerTools().mapProperty(String, String).convention(EMPTY_MAP)
++        this.systemPathProvider = ccso.providerTools().mapProperty(String, String).convention(Collections.<String, String>emptyMap())
+         this.os = OperatingSystem.current()
+         this.systemPath = ccso.providerTools().environmentVariable(os.pathVar).orElse(EMPTY)
+-        this.moduleOpens = ccso.providerTools().listProperty(String).convention(EMPTY_LIST)
++        this.moduleOpens = ccso.providerTools().listProperty(String).convention(Collections.<String>emptyList())
+ 
+         jvm {
+             addEnvironmentProvider(systemPathProvider)
+--- a/resolver-plugin/src/main/groovy/org/ysb33r/gradle/jruby/api/tasks/AbstractMultiScriptJRubyExecTask.groovy
++++ b/resolver-plugin/src/main/groovy/org/ysb33r/gradle/jruby/api/tasks/AbstractMultiScriptJRubyExecTask.groovy
+@@ -34,8 +34,6 @@
+ import org.ysb33r.grolifant5.api.core.jvm.GrolifantSimpleSetJavaForkOptions
+ import org.ysb33r.grolifant5.api.core.runnable.GrolifantDefaultTask
+ 
+-import static java.util.Collections.EMPTY_LIST
+-import static java.util.Collections.EMPTY_MAP
+ import static org.ysb33r.gradle.jruby.api.core.JRubyEnvironmentInheritance.ESSENTIAL_ONLY
+ import static org.ysb33r.gradle.jruby.api.gems.GemUtils.JARS_LOCK
+ import static org.ysb33r.grolifant5.api.core.StringTools.EMPTY
+@@ -179,9 +177,9 @@
+         this.inheritEnv = project.objects.property(JRubyEnvironmentInheritance).value(ESSENTIAL_ONLY)
+         this.carryOn = project.objects.property(Boolean).value(false)
+         this.failOnError = project.objects.property(Boolean).value(true)
+-        this.systemPathProvider = providerTools().mapProperty(String, String).convention(EMPTY_MAP)
++        this.systemPathProvider = providerTools().mapProperty(String, String).convention(Collections.<String, String>emptyMap())
+         this.systemPath = providerTools().environmentVariable(OperatingSystem.current().pathVar).orElse(EMPTY)
+-        this.moduleOpens = providerTools().listProperty(String).convention(EMPTY_LIST)
++        this.moduleOpens = providerTools().listProperty(String).convention(Collections.<String>emptyList())
+         this.reportFile = fsOperations().buildDirRegularFile(
+             "reports/jruby-scripts/${fsOperations().toSafeFileName(name)}/results.json"
+         )
